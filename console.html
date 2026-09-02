@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sentinel — Real-Time Abuse-Ring & FinOps Risk Console</title>
+  <meta name="description" content="Production-grade Graph ML Abuse-Ring Sentinel for Merchant Gateways. Detects colluding promo abuse, return fraud, chargeback syndicates, and ATO surges.">
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  
+  <!-- Design System -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Three.js 3D WebGL Engine & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body class="console-body">
+
+  <!-- ── Console Top Bar ────────────────────────────────────────────────────── -->
+  <header class="console-topbar">
+    <div class="console-brand-group">
+      <a href="index.html" class="stripe-brand">
+        <div class="stripe-logo-glyph">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <span class="stripe-brand-text">
+          Sentinel
+          <span class="stripe-brand-sub">Risk Manager 3D</span>
+        </span>
+      </a>
+
+      <div class="console-search-box">
+        <i class="fa-solid fa-magnifying-glass" style="color: rgba(255, 255, 255, 0.5);"></i>
+        <input type="text" id="consoleGlobalSearch" placeholder="Search account ID, order hash, or VPA... (e.g. acc_promo_ring_8841)">
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-family: var(--font-mono); background: rgba(255, 255, 255, 0.1); padding: 5px 12px; border-radius: var(--radius-pill);">
+        <span class="pill-glow-dot" style="background: var(--stripe-teal); box-shadow: 0 0 8px var(--stripe-teal);"></span>
+        <span>REDIS: 0.78ms p50 | 1.24ms p99</span>
+      </div>
+
+      <button class="stripe-btn btn-glass btn-sm" id="btnExportAudit">
+        <i class="fa-solid fa-clipboard-check"></i> Audit Trail (<span id="topAuditCount">0</span>)
+      </button>
+
+      <a href="index.html" class="stripe-btn btn-blurple btn-sm">
+        <i class="fa-solid fa-arrow-left"></i> Overview Site
+      </a>
+    </div>
+  </header>
+
+  <!-- ── Console Navigation Tabs ────────────────────────────────────────────── -->
+  <nav class="console-nav-strip">
+    <div class="console-tabs">
+      <div class="console-tab-item active" data-tab="tab-evaluator">
+        <i class="fa-solid fa-sliders"></i> Risk Evaluator & Briefings
+      </div>
+      <div class="console-tab-item" data-tab="tab-tradeoff">
+        <i class="fa-solid fa-chart-line"></i> Precision / Recall / Cost
+      </div>
+      <div class="console-tab-item" data-tab="tab-topologies">
+        <i class="fa-solid fa-diagram-project"></i> 3D & 2D Abuse Ring Topologies
+      </div>
+      <div class="console-tab-item" data-tab="tab-stream">
+        <i class="fa-solid fa-satellite-dish"></i> Gateway Payment Stream
+      </div>
+      <div class="console-tab-item" data-tab="tab-lab">
+        <i class="fa-solid fa-flask-vial"></i> Ablation & Calibration Lab
+      </div>
+      <div class="console-tab-item" data-tab="tab-drift">
+        <i class="fa-solid fa-wave-square"></i> ML Drift Monitor (PSI)
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--stripe-muted);">
+      <span class="pill-tag-mini" style="background: rgba(99, 91, 255, 0.1); color: var(--stripe-blurple); padding: 3px 8px; border-radius: 4px;">Track 02: AI Risk Manager</span> &bull;
+      <span style="color: var(--stripe-teal);"><i class="fa-solid fa-shield-check"></i> Zero Auto-Block Guardrail</span>
+    </div>
+  </nav>
+
+  <!-- ── Console Main Workspace ────────────────────────────────────────────── -->
+  <main class="console-main-container">
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         PANEL 1: Real-Time Risk Evaluator & Explainability Briefings
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="stripe-console-grid" id="tab-evaluator">
+      
+      <!-- Left: Interactive Controls -->
+      <div class="stripe-card-container">
+        <div class="card-title-bar">
+          <h2 class="card-title">
+            <i class="fa-solid fa-sliders" style="color: var(--stripe-blurple);"></i>
+            Merchant Abuse Risk Scoring Engine
+          </h2>
+          <span class="stripe-risk-badge badge-allowed" style="font-size: 11px;">POST /predict</span>
+        </div>
+
+        <!-- Scenario Quick-Picks (Merchant Abuse Rings) -->
+        <div class="scenario-pill-container">
+          <span style="font-size: 11px; font-weight: 700; color: var(--stripe-muted); text-transform: uppercase;">Merchant Benchmark Presets:</span>
+          <div class="scenario-pills-row">
+            <button class="scenario-pill-btn active" id="presetPromo">
+              1. Promo-Abuse Ring
+            </button>
+            <button class="scenario-pill-btn" id="presetReturn">
+              2. Return-Fraud Ring
+            </button>
+            <button class="scenario-pill-btn" id="presetATO">
+              3. ATO Checkout Surge
+            </button>
+            <button class="scenario-pill-btn" id="presetChargeback">
+              4. Chargeback Collusion
+            </button>
+            <button class="scenario-pill-btn" id="presetRetail">
+              5. Verified Retail (Clean)
+            </button>
+          </div>
+        </div>
+
+        <!-- Active Engine Dropdown -->
+        <div class="model-select-wrapper">
+          <span style="font-size: 12px; font-weight: 700; color: var(--stripe-navy);"><i class="fa-solid fa-layer-group"></i> Active Engine:</span>
+          <select id="modelStrategySelect">
+            <option value="hybrid" selected>Hybrid GAT + XGBoost Stacking Ensemble (Production Champion)</option>
+            <option value="cascade">Two-Stage Consensus Cascade (Sub-1ms Redis SLA)</option>
+            <option value="gat">GNN — GAT Multi-Head Attention (ROC-AUC 0.9129)</option>
+            <option value="xgboost">XGBoost Standard (22 Features Baseline)</option>
+            <option value="lightgbm">LightGBM (Histogram-binned Baseline)</option>
+          </select>
+        </div>
+
+        <!-- Account Form Inputs -->
+        <form id="scoringForm" style="display: flex; flex-direction: column; gap: 14px;">
+          
+          <div class="feature-group-box">
+            <div class="feature-group-header">
+              <span><i class="fa-solid fa-id-card"></i> Account Identifier</span>
+              <span class="slider-val">ID TENSOR</span>
+            </div>
+            <div style="padding: 12px 14px;">
+              <input type="text" id="account_id" value="acc_promo_ring_8841" placeholder="e.g. acc_promo_ring_8841" required>
+            </div>
+          </div>
+
+          <div class="feature-group-box">
+            <div class="feature-group-header">
+              <span><i class="fa-solid fa-money-bill-transfer"></i> Balance & Drain Signals</span>
+              <span style="color: var(--stripe-muted); font-size: 11px;">4 Features</span>
+            </div>
+            <div class="feature-group-body">
+              <div class="slider-control-item">
+                <div class="slider-label-row">
+                  <span>Balance Drain Ratio</span>
+                  <span class="slider-val" id="val_balance_drain">0.98</span>
+                </div>
+                <input type="range" id="balance_drain_ratio" min="0" max="1" step="0.01" value="0.98">
+              </div>
+
+              <div class="slider-control-item">
+                <div class="slider-label-row">
+                  <span>Night Tx Fraction (00:00-06:00 IST)</span>
+                  <span class="slider-val" id="val_night_tx">0.85</span>
+                </div>
+                <input type="range" id="night_tx_fraction" min="0" max="1" step="0.01" value="0.85">
+              </div>
+
+              <div class="slider-control-item">
+                <div class="slider-label-row">
+                  <span>Total Sent (Log Scale INR)</span>
+                  <span class="slider-val" id="val_total_sent">12.8</span>
+                </div>
+                <input type="range" id="total_sent_log" min="0" max="18" step="0.2" value="12.8">
+              </div>
+
+              <div class="slider-control-item">
+                <div class="slider-label-row">
+                  <span>Fraud Tx Type Fraction</span>
+                  <span class="slider-val" id="val_fraud_type">1.00</span>
+                </div>
+                <input type="range" id="fraud_type_fraction" min="0" max="1" step="0.05" value="1.00">
+              </div>
+            </div>
+          </div>
+
+          <div class="feature-group-box">
+            <div class="feature-group-header">
+              <span><i class="fa-solid fa-network-wired"></i> Graph Structural & Topology Centrality</span>
+              <span style="color: var(--stripe-muted); font-size: 11px;">4 Features</span>
+            </div>
+            <div class="feature-group-body">
+              <div class="slider-control-item">
+                <div class="slider-label-row">
+                  <span>Out/In Degree Ratio</span>
+                  <span class="slider-val" id="val_degree_ratio">16.0</span>
+                </div>
+                <input type="range" id="degree_ratio" min="0.1" max="40" step="0.5" value="16.0">
+              </div>
+
+              <div class="slider-control-item">
+                <div class="slider-label-row">
+                  <span>Graph PageRank Centrality</span>
+                  <span class="slider-val" id="val_pagerank">0.0085</span>
+                </div>
+                <input type="range" id="pagerank" min="0.0001" max="0.04" step="0.0005" value="0.0085">
+              </div>
+
+              <div class="slider-control-item">
+                <div class="slider-label-row">
+                  <span>K-Core Subgraph Depth</span>
+                  <span class="slider-val" id="val_k_core">8.0</span>
+                </div>
+                <input type="range" id="k_core_number" min="1" max="25" step="1" value="8">
+              </div>
+
+              <div class="slider-control-item">
+                <div class="slider-label-row">
+                  <span>Local Clustering Coefficient</span>
+                  <span class="slider-val" id="val_clustering">0.02</span>
+                </div>
+                <input type="range" id="local_clustering_coefficient" min="0" max="1" step="0.01" value="0.02">
+              </div>
+            </div>
+          </div>
+
+          <div class="feature-group-box">
+            <div class="feature-group-header">
+              <span><i class="fa-solid fa-bolt-lightning"></i> Rolling Velocity Surges</span>
+              <span style="color: var(--stripe-muted); font-size: 11px;">2 Features</span>
+            </div>
+            <div class="feature-group-body">
+              <div class="slider-control-item">
+                <div class="slider-label-row">
+                  <span>24h Tx Velocity</span>
+                  <span class="slider-val" id="val_tx_velocity">48</span>
+                </div>
+                <input type="range" id="tx_velocity_24h" min="0" max="120" step="1" value="48">
+              </div>
+
+              <div class="slider-control-item">
+                <div class="slider-label-row">
+                  <span>24h / 7d Amount Spike Ratio</span>
+                  <span class="slider-val" id="val_amount_spike">4.50</span>
+                </div>
+                <input type="range" id="amount_spike_ratio" min="0.1" max="12" step="0.1" value="4.5">
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="stripe-btn btn-blurple btn-lg" id="btnCalculateRisk" style="width: 100%; justify-content: center;">
+            <i class="fa-solid fa-microchip"></i> Evaluate Sentinel Risk Score
+          </button>
+        </form>
+      </div>
+
+      <!-- Right: Risk Evaluation Result & Explainability Console -->
+      <div class="stripe-card-container">
+        <div class="card-title-bar">
+          <h2 class="card-title">
+            <i class="fa-solid fa-shield-halved" style="color: var(--stripe-cyan-text);"></i>
+            Evaluation Output & Explainability
+          </h2>
+          <span style="font-size: 11px; font-family: var(--font-mono); color: var(--stripe-muted);" id="resultLatencyText">
+            <i class="fa-solid fa-bolt" style="color: var(--stripe-teal);"></i> Redis Hit: 0.78 ms
+          </span>
+        </div>
+
+        <div class="stripe-result-box" id="resultDecisionBox">
+          
+          <!-- Segmented Radar Score Meter in Result Box -->
+          <div class="radar-segmented-score-container">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <div>
+                <span style="font-size: 11px; font-weight: 700; color: var(--stripe-muted); text-transform: uppercase;">MERCHANT RISK PROBABILITY</span>
+                <div style="font-family: var(--font-mono); font-size: 16px; font-weight: 800; color: var(--stripe-navy);" id="resultAccountId">acc_promo_ring_8841</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-family: var(--font-mono); font-weight: 800; font-size: 24px; color: var(--stripe-coral);" id="riskScoreDisplay">98% (Critical)</span>
+                <span class="stripe-risk-badge badge-elevated" id="resultRiskStamp">FLAGGED FOR REVIEW</span>
+              </div>
+            </div>
+
+            <div class="radar-segmented-track">
+              <div class="radar-needle-marker" id="resultNeedle" style="left: 98%;"></div>
+            </div>
+
+            <div class="radar-scale-labels">
+              <span style="color: #15803d;">Normal (0-20%)</span>
+              <span style="color: #b45309;">Cost-Optimal T* (42%)</span>
+              <span style="color: var(--stripe-coral);">High Risk (66-99%)</span>
+            </div>
+          </div>
+
+          <!-- Multi-Task Risk Breakdown (Tier 4 HGT Heads) -->
+          <div style="background: var(--stripe-bg-light); border: 1px solid var(--stripe-border); border-radius: var(--radius-sm); padding: 12px 16px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 11px; font-weight: 700; color: var(--stripe-navy); text-transform: uppercase;">
+                <i class="fa-solid fa-layer-group" style="color: var(--stripe-blurple);"></i> Specialized Multi-Task Heads (FraudHGT)
+              </span>
+              <span style="font-size: 10px; font-family: var(--font-mono); color: var(--stripe-muted);">4 Parallel Sub-Risk Heads</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-size: 11px;">
+              <div style="background: #ffffff; border: 1px solid var(--stripe-border-subtle); border-radius: 4px; padding: 6px 8px;">
+                <div style="color: var(--stripe-muted); font-size: 10px; font-weight: 600;">PROMO-ABUSE</div>
+                <div style="font-family: var(--font-mono); font-weight: 700; color: var(--stripe-coral); font-size: 13px;" id="riskValPromo">98.4%</div>
+              </div>
+              <div style="background: #ffffff; border: 1px solid var(--stripe-border-subtle); border-radius: 4px; padding: 6px 8px;">
+                <div style="color: var(--stripe-muted); font-size: 10px; font-weight: 600;">RETURN / RTO</div>
+                <div style="font-family: var(--font-mono); font-weight: 700; color: var(--stripe-amber); font-size: 13px;" id="riskValReturn">82.1%</div>
+              </div>
+              <div style="background: #ffffff; border: 1px solid var(--stripe-border-subtle); border-radius: 4px; padding: 6px 8px;">
+                <div style="color: var(--stripe-muted); font-size: 10px; font-weight: 600;">CHARGEBACK</div>
+                <div style="font-family: var(--font-mono); font-weight: 700; color: var(--stripe-slate); font-size: 13px;" id="riskValChargeback">35.6%</div>
+              </div>
+              <div style="background: #ffffff; border: 1px solid var(--stripe-border-subtle); border-radius: 4px; padding: 6px 8px;">
+                <div style="color: var(--stripe-muted); font-size: 10px; font-weight: 600;">ATO SURGE</div>
+                <div style="font-family: var(--font-mono); font-weight: 700; color: var(--stripe-teal); font-size: 13px;" id="riskValATO">12.0%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Advisory Action Banner (Strict Human Review Only) -->
+          <div class="action-banner-row" id="resultActionBox">
+            <span class="action-tag-pill" id="actionTag"><i class="fa-solid fa-user-check"></i> RECOMMENDED REVIEW ACTION</span>
+            <span id="actionDesc" style="color: var(--stripe-slate); font-weight: 600;">Flag for 2-person manual verification: Promo-Abuse Ring Suspected</span>
+          </div>
+
+          <!-- Human Analyst Action Confirmation Step -->
+          <div style="background: rgba(99, 91, 255, 0.05); border: 1px solid rgba(99, 91, 255, 0.2); border-radius: var(--radius-sm); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div>
+              <div style="font-size: 12px; font-weight: 700; color: var(--stripe-navy);">
+                <i class="fa-solid fa-gavel" style="color: var(--stripe-blurple);"></i> Human-in-the-Loop Confirmation Guardrail
+              </div>
+              <div style="font-size: 11px; color: var(--stripe-muted);">
+                Advisory score. An explicit human confirmation is required before any merchant action.
+              </div>
+            </div>
+            <button class="stripe-btn btn-blurple btn-sm" id="btnRecordHumanDecision">
+              <i class="fa-solid fa-signature"></i> Record Analyst Decision
+            </button>
+          </div>
+
+          <!-- LLM Investigator Tactical Briefing -->
+          <div class="llm-briefing-box" style="background: #f8fafc; border-left: 4px solid var(--stripe-blurple); border-radius: 4px; padding: 14px 16px; margin-top: 10px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--stripe-blurple);"><i class="fa-solid fa-brain"></i> LLM Investigator Tactical Briefing</span>
+              <span style="font-size: 10px; font-family: var(--font-mono); color: var(--stripe-muted);">Synthesized from SHAP + Topology</span>
+            </div>
+            <div id="briefingContent" style="font-size: 13px; line-height: 1.5; color: var(--stripe-slate);">
+              Loading tactical briefing...
+            </div>
+          </div>
+
+          <!-- SHAP Local Feature Attribution Bars -->
+          <div class="shap-container">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--stripe-muted); display: flex; justify-content: space-between;">
+              <span><i class="fa-solid fa-chart-column"></i> Local Feature Attribution (SHAP Impact)</span>
+              <span style="font-size: 10px; color: var(--stripe-slate);"><span style="color: var(--stripe-coral);">■ Red: Risk Driver</span> &bull; <span style="color: var(--stripe-teal);">■ Green: Protective</span></span>
+            </div>
+            <div id="shapBarsList" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+              <!-- Populated dynamically via JS -->
+            </div>
+          </div>
+
+          <!-- Counterfactual "What-If" Analysis -->
+          <div class="counterfactual-box" style="background: var(--stripe-bg-light); border: 1px solid var(--stripe-border); border-radius: var(--radius-sm); padding: 14px 16px;">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--stripe-navy); margin-bottom: 6px;">
+              <i class="fa-solid fa-shuffle" style="color: var(--stripe-teal);"></i> Counterfactual Explanation (Path to Safe Tier)
+            </div>
+            <div id="counterfactualSummary" style="font-size: 13px; color: var(--stripe-slate);">
+              Loading minimal perturbations...
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         PANEL 2: Interactive Precision / Recall / Cost Tradeoff Visualizer
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="stripe-card-container" id="tab-tradeoff" style="display: none;">
+      <div class="card-title-bar">
+        <h2 class="card-title">
+          <i class="fa-solid fa-chart-line" style="color: var(--stripe-blurple);"></i>
+          Interactive Precision / Recall / Cost Tradeoff Visualizer
+        </h2>
+        <span class="stripe-risk-badge badge-allowed" style="font-size: 11px;">PaySim Held-Out Test Split</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 14px;">
+        <!-- Left: Interactive Threshold & Financial Cost Model -->
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div style="background: var(--stripe-bg-light); border: 1px solid var(--stripe-border); border-radius: var(--radius-sm); padding: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-weight: 700; font-size: 14px; color: var(--stripe-navy);">
+                <i class="fa-solid fa-sliders" style="color: var(--stripe-blurple);"></i> Decision Threshold (T):
+              </span>
+              <span id="sliderThresholdDisplay" style="font-family: var(--font-mono); font-size: 18px; font-weight: 800; color: var(--stripe-blurple);">0.42 (Cost-Optimal T*)</span>
+            </div>
+
+            <input type="range" id="tradeoffThresholdSlider" min="0.01" max="0.99" step="0.01" value="0.42" style="width: 100%;">
+
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--stripe-muted); margin-top: 6px;">
+              <span>0.01 (Aggressive Recall)</span>
+              <span style="color: var(--stripe-blurple); font-weight: 700;">T* = 0.42 (Min Cost)</span>
+              <span>0.99 (High Precision)</span>
+            </div>
+          </div>
+
+          <!-- Dynamic Metric Readouts -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+            <div class="stream-stat-item" style="background: #ffffff; border: 1px solid var(--stripe-border); border-radius: var(--radius-sm); padding: 12px; text-align: center;">
+              <span style="font-size: 11px; color: var(--stripe-muted); font-weight: 700;">PRECISION</span>
+              <div id="metricPrecision" style="font-family: var(--font-mono); font-size: 18px; font-weight: 800; color: var(--stripe-teal); margin-top: 4px;">89.4%</div>
+            </div>
+            <div class="stream-stat-item" style="background: #ffffff; border: 1px solid var(--stripe-border); border-radius: var(--radius-sm); padding: 12px; text-align: center;">
+              <span style="font-size: 11px; color: var(--stripe-muted); font-weight: 700;">RECALL</span>
+              <div id="metricRecall" style="font-family: var(--font-mono); font-size: 18px; font-weight: 800; color: var(--stripe-amber); margin-top: 4px;">85.2%</div>
+            </div>
+            <div class="stream-stat-item" style="background: #ffffff; border: 1px solid var(--stripe-border); border-radius: var(--radius-sm); padding: 12px; text-align: center;">
+              <span style="font-size: 11px; color: var(--stripe-muted); font-weight: 700;">F1-SCORE</span>
+              <div id="metricF1" style="font-family: var(--font-mono); font-size: 18px; font-weight: 800; color: var(--stripe-navy); margin-top: 4px;">0.0485</div>
+            </div>
+            <div class="stream-stat-item" style="background: #ffffff; border: 1px solid var(--stripe-border); border-radius: var(--radius-sm); padding: 12px; text-align: center;">
+              <span style="font-size: 11px; color: var(--stripe-muted); font-weight: 700;">FLAG RATE</span>
+              <div id="metricFlagRate" style="font-family: var(--font-mono); font-size: 18px; font-weight: 800; color: var(--stripe-coral); margin-top: 4px;">14 / 10k</div>
+            </div>
+          </div>
+
+          <!-- Total Expected Cost Display -->
+          <div style="background: linear-gradient(135deg, #0a2540 0%, #1a3a60 100%); color: #ffffff; border-radius: var(--radius-sm); padding: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <div>
+                <span style="font-size: 11px; font-weight: 700; color: var(--stripe-cyan); text-transform: uppercase;">TOTAL EXPECTED COST (10k Batch)</span>
+                <div id="metricTotalCost" style="font-family: var(--font-mono); font-size: 26px; font-weight: 800; color: #ffffff; margin-top: 4px;">INR 77,107.80</div>
+              </div>
+              <span class="pill-tag-mini" style="background: var(--stripe-teal); color: #000; font-weight: 700; padding: 4px 10px; border-radius: 4px;" id="costOptimalBadge">MINIMUM COST POINT</span>
+            </div>
+            <div style="font-size: 12px; color: #94a3b8; margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 8px;">
+              Formula: <code>Cost = (FP × ₹350) + (FN × ₹42,000)</code>. Minimizes analyst review time while catching high-value ring losses.
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Interactive Confusion Matrix & Case Studies -->
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="font-size: 13px; font-weight: 700; color: var(--stripe-navy);">
+            <i class="fa-solid fa-table-cells" style="color: var(--stripe-blurple);"></i> Interactive Confusion Matrix (Click Cell to Inspect Concrete Case Study):
+          </div>
+
+          <div class="matrix-grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="matrix-cell matrix-tp active" id="cellTP" style="background: #f0fdf4; border: 2px solid var(--stripe-teal); border-radius: var(--radius-sm); padding: 14px; cursor: pointer;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="font-size: 11px; font-weight: 700; color: #166534;">TRUE POSITIVE (TP)</span>
+                <strong style="font-family: var(--font-mono); color: #166534;" id="valTP">11.1</strong>
+              </div>
+              <div style="font-size: 12px; color: var(--stripe-slate); margin-top: 6px;">Coordinated Promo Ring caught before payout.</div>
+            </div>
+
+            <div class="matrix-cell matrix-fp" id="cellFP" style="background: #fffbeb; border: 1px solid var(--stripe-amber); border-radius: var(--radius-sm); padding: 14px; cursor: pointer;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="font-size: 11px; font-weight: 700; color: #92400e;">FALSE POSITIVE (FP)</span>
+                <strong style="font-family: var(--font-mono); color: #92400e;" id="valFP">3</strong>
+              </div>
+              <div style="font-size: 12px; color: var(--stripe-slate); margin-top: 6px;">Wholesale supplier flagged due to rapid outflow.</div>
+            </div>
+
+            <div class="matrix-cell matrix-fn" id="cellFN" style="background: #fef2f2; border: 1px solid var(--stripe-coral); border-radius: var(--radius-sm); padding: 14px; cursor: pointer;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="font-size: 11px; font-weight: 700; color: #991b1b;">FALSE NEGATIVE (FN)</span>
+                <strong style="font-family: var(--font-mono); color: #991b1b;" id="valFN">1.9</strong>
+              </div>
+              <div style="font-size: 12px; color: var(--stripe-slate); margin-top: 6px;">Distributed low-and-slow single-hop edge.</div>
+            </div>
+
+            <div class="matrix-cell matrix-tn" id="cellTN" style="background: #f8fafc; border: 1px solid var(--stripe-border); border-radius: var(--radius-sm); padding: 14px; cursor: pointer;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="font-size: 11px; font-weight: 700; color: var(--stripe-slate);">TRUE NEGATIVE (TN)</span>
+                <strong style="font-family: var(--font-mono); color: var(--stripe-slate);" id="valTN">9,984</strong>
+              </div>
+              <div style="font-size: 12px; color: var(--stripe-slate); margin-top: 6px;">Standard consumer checkouts allowed seamlessly.</div>
+            </div>
+          </div>
+
+          <!-- Dynamic Case Study Explanation Box -->
+          <div id="caseStudyBox" style="background: #ffffff; border: 1px solid var(--stripe-border); border-radius: var(--radius-sm); padding: 16px;">
+            <div style="font-weight: 700; font-size: 13px; color: var(--stripe-navy); margin-bottom: 6px;" id="caseStudyTitle">
+              <i class="fa-solid fa-circle-info" style="color: var(--stripe-blurple);"></i> Concrete True Positive (TP) Case Study
+            </div>
+            <div style="font-size: 13px; color: var(--stripe-slate); line-height: 1.5;" id="caseStudyDesc">
+              Account <code>acc_syndicate_004</code> was flagged with a risk score of 0.94. The account drained 98% of funds within 15 minutes of receipt and showed an out/in degree ratio of 16.0 to 14 separate recipient accounts. The GAT multi-head attention correctly identified the hub topology.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         PANEL 3: 3D Spatial Visualizer & 2D Abuse Ring Topologies
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="stripe-dark-section" id="tab-topologies" style="display: none;">
+      <div class="card-title-bar" style="border-bottom-color: rgba(255, 255, 255, 0.15);">
+        <h2 class="card-title" style="color: #ffffff;">
+          <i class="fa-solid fa-diagram-project" style="color: var(--stripe-cyan);"></i>
+          Merchant Abuse Ring Topologies & Temporal Formation
+        </h2>
+        
+        <div class="canvas-tab-bar">
+          <button class="canvas-tab-pill active" id="tab3DView">
+            <i class="fa-solid fa-cube"></i> 3D Spatial Graph
+          </button>
+          <button class="canvas-tab-pill" id="tab2DView">
+            <i class="fa-solid fa-circle-nodes"></i> 2D Ring Topologies & Time Scrubber
+          </button>
+        </div>
+      </div>
+
+      <!-- 3D WebGL Graph View -->
+      <div id="view3DContainer">
+        <div class="webgl-container-box">
+          <div id="threeCanvas"></div>
+
+          <!-- Floating 3D Node Telemetry HUD -->
+          <div class="webgl-hud-card" id="nodeHudOverlay">
+            <div style="font-weight: 700; font-size: 13px; border-bottom: 1px solid rgba(255, 255, 255, 0.15); padding-bottom: 6px; margin-bottom: 6px; display: flex; justify-content: space-between;">
+              <span id="hudNodeId" style="color: #ffffff;">acc_promo_ring_8841</span>
+              <span style="color: var(--stripe-coral); font-family: var(--font-mono); font-weight: 700;" id="hudNodeType">PROMO-ABUSE HUB</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px; font-family: var(--font-mono); font-size: 11px;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #94a3b8;">Risk Score:</span>
+                <strong style="color: var(--stripe-coral);" id="hudRiskVal">98.2%</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #94a3b8;">In / Out Deg:</span>
+                <span id="hudDegVal" style="color: #ffffff;">3 / 48</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #94a3b8;">GAT Attn α_ij:</span>
+                <span id="hudAttnVal" style="color: var(--stripe-cyan);">0.9420</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #94a3b8;">PageRank:</span>
+                <span id="hudPrVal" style="color: #ffffff;">0.0085</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3D Controls Cluster -->
+          <div class="webgl-controls-overlay">
+            <button class="stripe-btn btn-glass" id="btnToggleOrbit" style="padding: 5px 12px; font-size: 11px;">
+              <i class="fa-solid fa-rotate"></i> Auto-Orbit
+            </button>
+            <button class="stripe-btn btn-blurple" id="btnFocusMule" style="padding: 5px 12px; font-size: 11px;">
+              <i class="fa-solid fa-crosshairs"></i> Focus Ring Hub
+            </button>
+            <button class="stripe-btn btn-glass" id="btnReset3D" style="padding: 5px 12px; font-size: 11px;">
+              <i class="fa-solid fa-arrows-to-eye"></i> Reset
+            </button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 16px; font-size: 12px; font-weight: 500; flex-wrap: wrap; margin-top: 14px; color: #94a3b8;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="width: 10px; height: 10px; background: var(--stripe-coral); border-radius: 50%; display: inline-block;"></span>
+            Identified Collusive Ring Hub
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="width: 10px; height: 10px; background: var(--stripe-cyan); border-radius: 50%; display: inline-block;"></span>
+            Synthetic / Sybil Ingress Node
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="width: 10px; height: 10px; background: var(--stripe-teal); border-radius: 50%; display: inline-block;"></span>
+            Cash-Out Settlement Gateway
+          </div>
+        </div>
+      </div>
+
+      <!-- 2D Canvas Topologies with Temporal Time-Scrubber -->
+      <div id="view2DContainer" style="display: none;">
+        <div class="topology-2d-container">
+          <canvas id="topology2DCanvas" width="600" height="420"></canvas>
+
+          <!-- Topology Selector Bar -->
+          <div class="topology-pill-group">
+            <button class="topo-btn active" id="topoPromo">1. Promo-Abuse Fan-In/Out</button>
+            <button class="topo-btn" id="topoReturn">2. Return-Fraud Loop</button>
+            <button class="topo-btn" id="topoChargeback">3. Chargeback Collusion</button>
+            <button class="topo-btn" id="topoMerchant">4. Verified Merchant</button>
+          </div>
+        </div>
+
+        <!-- Temporal Ring Formation Time Scrubber -->
+        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--radius-sm); padding: 14px 18px; margin-top: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 13px; font-weight: 700; color: #ffffff;">
+              <i class="fa-solid fa-clock-rotate-left" style="color: var(--stripe-cyan);"></i> Temporal Ring Formation View (72h Window)
+            </span>
+            <span id="timeScrubberVal" style="font-family: var(--font-mono); color: var(--stripe-cyan); font-weight: 700;">Hour 72 (Full Ring Formed)</span>
+          </div>
+          <input type="range" id="timeScrubber" min="1" max="72" step="1" value="72" style="width: 100%;">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-top: 6px;">
+            <span>Hour 0 (Initial Seed)</span>
+            <span>Hour 24 (Fan-In Edge Burst)</span>
+            <span>Hour 72 (Settlement Drain)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         PANEL 4: High-Throughput Live Payment Gateway Stream
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="stripe-card-container" id="tab-stream" style="display: none;">
+      <div class="card-title-bar">
+        <h2 class="card-title">
+          <i class="fa-solid fa-satellite-dish" style="color: var(--stripe-blurple);"></i>
+          Live Payment Events & Stream Inspector
+        </h2>
+        
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button class="stripe-btn btn-white" id="btnStreamToggle">
+            <i class="fa-solid fa-pause"></i> <span id="streamToggleText">Pause Stream</span>
+          </button>
+          <button class="stripe-btn btn-white" id="btnInjectPromo">
+            <i class="fa-solid fa-triangle-exclamation" style="color: var(--stripe-coral);"></i> Plant Promo Ring (6 Tx)
+          </button>
+          <button class="stripe-btn btn-white" id="btnInjectReturn">
+            <i class="fa-solid fa-box-open" style="color: var(--stripe-amber);"></i> Plant Return Ring (4 Tx)
+          </button>
+          <button class="stripe-btn btn-blurple" id="btnSimulateSurge">
+            <i class="fa-solid fa-bolt"></i> Simulate Traffic Surge (20 Tx)
+          </button>
+        </div>
+      </div>
+
+      <div class="stripe-stream-layout">
+        <!-- Terminal Event Log -->
+        <div class="stripe-terminal-box" id="streamTerminal">
+          <div class="stream-event-row">[SYSTEM] Connected to payment gateway webhook feed...</div>
+          <div class="stream-event-row cache-hit">[REDIS] Feature store connected. Nearline cache hot (0.78ms).</div>
+          <div class="stream-event-row">[PIPELINE] Batch scoring worker online. Target p99 &lt; 15ms.</div>
+        </div>
+
+        <!-- Telemetry Stats Box -->
+        <div class="stream-telemetry-box" style="background: var(--stripe-bg-light); border-color: var(--stripe-border);">
+          <div class="stream-stat-item" style="border-bottom-color: var(--stripe-border);">
+            <span style="color: var(--stripe-muted);">STREAM VELOCITY:</span>
+            <span id="statVelocity" style="font-family: var(--font-mono); color: var(--stripe-blurple); font-weight: 700;">28 events/sec</span>
+          </div>
+          <div class="stream-stat-item" style="border-bottom-color: var(--stripe-border);">
+            <span style="color: var(--stripe-muted);">TOTAL PROCESSED:</span>
+            <span id="statTotal" style="font-family: var(--font-mono); font-weight: 700; color: var(--stripe-navy);">1,482 transactions</span>
+          </div>
+          <div class="stream-stat-item" style="border-bottom-color: var(--stripe-border);">
+            <span style="color: var(--stripe-muted);">FLAGGED FOR REVIEW:</span>
+            <span id="statFlagged" style="font-family: var(--font-mono); color: var(--stripe-coral); font-weight: 700;">14 flagged (0.94%)</span>
+          </div>
+          <div class="stream-stat-item" style="border-bottom-color: var(--stripe-border);">
+            <span style="color: var(--stripe-muted);">REDIS CACHE HIT RATE:</span>
+            <span id="statCacheHit" style="font-family: var(--font-mono); color: var(--stripe-teal); font-weight: 700;">97.4% (&lt;0.8ms read)</span>
+          </div>
+          <div class="stream-stat-item" style="border-bottom: none;">
+            <span style="color: var(--stripe-muted);">P99 SERVING LATENCY:</span>
+            <span id="statP99" style="font-family: var(--font-mono); font-weight: 700; color: var(--stripe-navy);">1.24 ms (SLA: &lt;15ms)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         PANEL 5: Ablation & Calibration Lab
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="stripe-card-container" id="tab-lab" style="display: none;">
+      <div class="card-title-bar">
+        <h2 class="card-title">
+          <i class="fa-solid fa-flask-vial" style="color: var(--stripe-blurple);"></i>
+          Frontier Lab: Feature Ablation, Calibration & Adversarial Robustness
+        </h2>
+        <span class="stripe-risk-badge badge-allowed" style="font-size: 11px;">Tier 3 Rigor</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 14px;">
+        <!-- Left: Feature Ablation Study -->
+        <div style="background: var(--stripe-bg-light); border: 1px solid var(--stripe-border); border-radius: var(--radius-sm); padding: 18px;">
+          <h3 style="font-size: 14px; font-weight: 700; color: var(--stripe-navy); margin-bottom: 8px;">
+            <i class="fa-solid fa-layer-group" style="color: var(--stripe-blurple);"></i> Feature Ablation Study (Graph Lift)
+          </h3>
+          <p style="font-size: 12px; color: var(--stripe-slate); margin-bottom: 12px;">
+            Quantifies the exact marginal lift from graph structural topology vs tabular heuristics on held-out test data.
+          </p>
+          <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 2px solid var(--stripe-border); text-align: left;">
+                <th style="padding: 6px;">Configuration</th>
+                <th style="padding: 6px; text-align: right;">PR-AUC</th>
+                <th style="padding: 6px; text-align: right;">Prec@100</th>
+                <th style="padding: 6px; text-align: right;">Delta</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid var(--stripe-border-subtle);">
+                <td style="padding: 6px; font-weight: 600;">1. Tabular Only (11)</td>
+                <td style="padding: 6px; text-align: right; font-family: var(--font-mono);">0.0537</td>
+                <td style="padding: 6px; text-align: right; font-family: var(--font-mono);">73.6%</td>
+                <td style="padding: 6px; text-align: right; color: var(--stripe-muted);">Base</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--stripe-border-subtle);">
+                <td style="padding: 6px; font-weight: 600;">2. Graph Only (6)</td>
+                <td style="padding: 6px; text-align: right; font-family: var(--font-mono);">0.0482</td>
+                <td style="padding: 6px; text-align: right; font-family: var(--font-mono);">62.0%</td>
+                <td style="padding: 6px; text-align: right; color: var(--stripe-coral);">-11.6%</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--stripe-border-subtle);">
+                <td style="padding: 6px; font-weight: 600;">3. Tabular + Centrality</td>
+                <td style="padding: 6px; text-align: right; font-family: var(--font-mono);">0.0815</td>
+                <td style="padding: 6px; text-align: right; font-family: var(--font-mono);">89.0%</td>
+                <td style="padding: 6px; text-align: right; color: var(--stripe-teal); font-weight: 700;">+15.4%</td>
+              </tr>
+              <tr style="background: #f0fdf4;">
+                <td style="padding: 6px; font-weight: 700; color: #166534;">4. Full Hybrid + GAT (22)</td>
+                <td style="padding: 6px; text-align: right; font-family: var(--font-mono); font-weight: 700; color: #166534;">0.0892</td>
+                <td style="padding: 6px; text-align: right; font-family: var(--font-mono); font-weight: 700; color: #166534;">92.0%</td>
+                <td style="padding: 6px; text-align: right; color: #166534; font-weight: 700;">+18.4% Peak</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Right: Adversarial Robustness & Calibration -->
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <!-- Adversarial Box -->
+          <div style="background: var(--stripe-bg-light); border: 1px solid var(--stripe-border); border-radius: var(--radius-sm); padding: 18px;">
+            <h3 style="font-size: 14px; font-weight: 700; color: var(--stripe-navy); margin-bottom: 6px;">
+              <i class="fa-solid fa-user-ninja" style="color: var(--stripe-coral);"></i> Adversarial Evasion Robustness (Defensive)
+            </h3>
+            <p style="font-size: 12px; color: var(--stripe-slate); margin-bottom: 10px;">
+              Tests detector resilience against low-and-slow ring dispersion (₹500k across 25 dummy UPI IDs).
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div style="background: #ffffff; border: 1px solid var(--stripe-border); border-radius: 4px; padding: 10px;">
+                <span style="font-size: 11px; color: var(--stripe-muted);">TABULAR XGBOOST:</span>
+                <div style="font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--stripe-coral); margin-top: 2px;">0.0% Caught</div>
+                <div style="font-size: 10px; color: var(--stripe-slate); margin-top: 2px;">Misses distributed ring completely.</div>
+              </div>
+              <div style="background: #ffffff; border: 1px solid var(--stripe-border); border-radius: 4px; padding: 10px;">
+                <span style="font-size: 11px; color: var(--stripe-muted);">GAT GRAPH ATTENTION:</span>
+                <div style="font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--stripe-teal); margin-top: 2px;">84.0% Caught</div>
+                <div style="font-size: 10px; color: var(--stripe-slate); margin-top: 2px;">Detects shared multi-hop sinks.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calibration Box -->
+          <div style="background: var(--stripe-bg-light); border: 1px solid var(--stripe-border); border-radius: var(--radius-sm); padding: 18px;">
+            <h3 style="font-size: 14px; font-weight: 700; color: var(--stripe-navy); margin-bottom: 6px;">
+              <i class="fa-solid fa-bullseye" style="color: var(--stripe-teal);"></i> Isotonic Probability Calibration
+            </h3>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 6px;">
+              <span>Expected Calibration Error (ECE):</span>
+              <strong style="font-family: var(--font-mono); color: var(--stripe-teal);">0.0242 &rarr; 0.0001 (-99.7%)</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px;">
+              <span>Brier Score (MSE):</span>
+              <strong style="font-family: var(--font-mono); color: var(--stripe-teal);">0.00237 &rarr; 0.00003</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         PANEL 6: ML Drift Monitor (PSI)
+         ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="stripe-card-container" id="tab-drift" style="display: none;">
+      <div class="card-title-bar">
+        <h2 class="card-title">
+          <i class="fa-solid fa-wave-square" style="color: var(--stripe-blurple);"></i>
+          Population Stability Index (PSI) Drift Monitor Sandbox
+        </h2>
+        <span class="stripe-risk-badge badge-allowed" style="font-size: 11px;">src/drift/psi.py</span>
+      </div>
+
+      <div class="drift-sandbox-layout">
+        <!-- Drift Controls -->
+        <div class="drift-controls-card">
+          <div style="font-weight: 700; font-size: 14px; color: var(--stripe-navy); margin-bottom: 8px;">
+            Simulate Covariate Feature Shift
+          </div>
+          <p style="font-size: 13px; color: var(--stripe-slate); margin-bottom: 16px;">
+            Inject synthetic distribution shifts into incoming batches to test automated retraining triggers.
+          </p>
+
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="slider-control-item">
+              <div class="slider-label-row">
+                <span>Shift Balance Drain Distribution (&mu;)</span>
+                <span class="slider-val" id="val_shift_drain">+0.00</span>
+              </div>
+              <input type="range" id="shift_drain" min="-0.5" max="0.5" step="0.05" value="0.0">
+            </div>
+
+            <div class="slider-control-item">
+              <div class="slider-label-row">
+                <span>Shift Out-Degree Variance (&sigma;)</span>
+                <span class="slider-val" id="val_shift_degree">1.0x</span>
+              </div>
+              <input type="range" id="shift_degree" min="0.5" max="3.0" step="0.1" value="1.0">
+            </div>
+
+            <button class="stripe-btn btn-blurple" id="btnComputePSI" style="width: 100%; justify-content: center; margin-top: 10px;">
+              <i class="fa-solid fa-calculator"></i> Compute Batch PSI Drift
+            </button>
+          </div>
+        </div>
+
+        <!-- Drift Telemetry Readout -->
+        <div class="drift-readout-card">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--stripe-muted); text-transform: uppercase;">PSI DRIFT STATUS</span>
+            <span class="stripe-risk-badge badge-allowed" id="psiBadge">STABLE (PSI &lt; 0.10)</span>
+          </div>
+
+          <div style="font-family: var(--font-mono); font-size: 32px; font-weight: 800; color: var(--stripe-teal); margin-top: 8px;" id="psiValDisplay">
+            0.024
+          </div>
+
+          <p style="font-size: 13px; color: var(--stripe-slate); margin-top: 10px;" id="psiDesc">
+            Features are statistically stable relative to baseline training reference. No retraining needed.
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Human Analyst Decision Recording Modal ─────────────────────────────── -->
+  <div class="modal-backdrop" id="analystModal" style="display: none; position: fixed; inset: 0; background: rgba(10, 37, 64, 0.7); backdrop-filter: blur(8px); z-index: 999; align-items: center; justify-content: center;">
+    <div style="background: #ffffff; border-radius: var(--radius-md); width: 90%; max-width: 520px; padding: 24px; box-shadow: var(--shadow-float);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--stripe-navy);">
+          <i class="fa-solid fa-signature" style="color: var(--stripe-blurple);"></i> Record Human Analyst Decision
+        </h3>
+        <button class="modal-close" id="btnCloseAnalystModal" style="font-size: 18px; color: var(--stripe-muted);">&times;</button>
+      </div>
+
+      <form id="analystDecisionForm" style="display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: var(--stripe-slate);">Target Account ID</label>
+          <input type="text" id="modalAccountId" readonly style="width: 100%; padding: 8px 12px; background: var(--stripe-bg-light); border: 1px solid var(--stripe-border); border-radius: 4px; font-family: var(--font-mono); font-size: 13px;">
+        </div>
+
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: var(--stripe-slate);">Review Decision</label>
+          <select id="modalDecisionSelect" style="width: 100%; padding: 8px 12px; border: 1px solid var(--stripe-border); border-radius: 4px; font-size: 13px;">
+            <option value="CONFIRMED_FLAG">Confirm Flag (Hold Payout & Request Merchant KYC)</option>
+            <option value="OVERRIDDEN_CLEAN">Override / Dismiss (Allow Transaction as Clean)</option>
+            <option value="ESCALATE_2PERSON">Escalate to Senior Fraud Lead (2-Person Review)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: var(--stripe-slate);">Analyst ID</label>
+          <input type="text" id="modalAnalystId" value="analyst_ops_01" style="width: 100%; padding: 8px 12px; border: 1px solid var(--stripe-border); border-radius: 4px; font-size: 13px;">
+        </div>
+
+        <div>
+          <label style="font-size: 12px; font-weight: 700; color: var(--stripe-slate);">Investigator Rational & Notes</label>
+          <textarea id="modalNotes" rows="3" placeholder="Document reason for decision based on SHAP/topology..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--stripe-border); border-radius: 4px; font-size: 13px;"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
+          <button type="button" class="stripe-btn btn-glass btn-sm" id="btnCancelAnalyst">Cancel</button>
+          <button type="submit" class="stripe-btn btn-blurple btn-sm" id="btnSubmitDecision">Confirm & Log to Audit Trail</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Audit Trail Modal ─────────────────────────────────────────────────── -->
+  <div class="modal-backdrop" id="auditModal" style="display: none; position: fixed; inset: 0; background: rgba(10, 37, 64, 0.7); backdrop-filter: blur(8px); z-index: 999; align-items: center; justify-content: center;">
+    <div style="background: #ffffff; border-radius: var(--radius-md); width: 90%; max-width: 800px; max-height: 85vh; display: flex; flex-direction: column; padding: 24px; box-shadow: var(--shadow-float);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+          <h3 style="font-size: 16px; font-weight: 700; color: var(--stripe-navy);">
+            <i class="fa-solid fa-clipboard-check" style="color: var(--stripe-teal);"></i> Durable Human-in-the-Loop Audit Trail
+          </h3>
+          <p style="font-size: 12px; color: var(--stripe-muted);">Immutable record of all human analyst confirmations and risk assessments.</p>
+        </div>
+        <button class="modal-close" id="btnCloseAuditModal" style="font-size: 18px; color: var(--stripe-muted);">&times;</button>
+      </div>
+
+      <div style="flex: 1; overflow-y: auto; border: 1px solid var(--stripe-border); border-radius: var(--radius-sm); margin-bottom: 16px;">
+        <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+          <thead style="background: var(--stripe-bg-light); position: sticky; top: 0;">
+            <tr style="border-bottom: 1px solid var(--stripe-border); text-align: left;">
+              <th style="padding: 8px;">Audit ID</th>
+              <th style="padding: 8px;">Account ID</th>
+              <th style="padding: 8px;">Decision</th>
+              <th style="padding: 8px;">Analyst</th>
+              <th style="padding: 8px;">Timestamp</th>
+            </tr>
+          </thead>
+          <tbody id="auditTableBody">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 12px; color: var(--stripe-muted);"><span id="auditCountTotal">0</span> records logged</span>
+        <div style="display: flex; gap: 10px;">
+          <button class="stripe-btn btn-white btn-sm" id="btnDownloadCSV"><i class="fa-solid fa-file-csv"></i> Download CSV</button>
+          <button class="stripe-btn btn-white btn-sm" id="btnDownloadJSON"><i class="fa-solid fa-file-code"></i> Download JSON</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client Application Script -->
+  <script src="app.js"></script>
+</body>
+</html>
