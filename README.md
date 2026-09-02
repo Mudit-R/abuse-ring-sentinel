@@ -8,7 +8,7 @@ Built and tested on PaySim (6.36M transactions, 3.28M accounts). Full benchmark 
 
 ---
 
-## why I built this
+## Why I built this
 
 I was looking at fraud detection papers and kept running into the same problem: most systems treat each transaction or account independently. But real fraud rings don't work that way — they share devices, delivery addresses, promo codes, and UPI IDs. The signal is in the *connections*, not the individual data points.
 
@@ -18,7 +18,7 @@ Spoiler: you can, but the latency problem requires a nearline Redis caching laye
 
 ---
 
-## what it does
+## What it does
 
 Two models work together:
 
@@ -32,7 +32,7 @@ Both stages have to agree before escalating. This eliminates most false positive
 
 ---
 
-## numbers
+## Numbers
 
 Evaluated on held-out temporal test split (no leakage — see `tests/test_leakage.py`):
 
@@ -45,7 +45,7 @@ Evaluated on held-out temporal test split (no leakage — see `tests/test_leakag
 
 XGBoost standalone already hits 92% Precision@100 but completely misses distributed rings. GAT catches the rings but is too slow for production and gets overwhelmed by class imbalance (0.13% fraud rate). The cascade gets both.
 
-### adversarial test
+### Adversarial test
 
 I manually constructed a "low-and-slow" ring: 25 accounts, each making ₹20k transactions (below any obvious threshold), all attached to 100 clean decoy accounts to blend in.
 
@@ -53,7 +53,7 @@ I manually constructed a "low-and-slow" ring: 25 accounts, each making ₹20k tr
 - GAT: **84% catch rate** — picks up the convergence pattern, misses 4 decoy-blurred accounts
 - CARE-GNN (with similarity-based neighbor pruning): **92% catch rate**
 
-### cost model
+### Cost model
 
 Using ₹350 per false positive (analyst review time) and ₹42,000 per false negative (average ring payout before detection):
 
@@ -79,7 +79,7 @@ The ₹14,065 improvement over standalone XGBoost (₹91,172 → ₹77,107) come
 
 ---
 
-## architecture
+## Architecture
 
 ```
 src/
@@ -109,7 +109,7 @@ src/
 
 ---
 
-## research models used
+## Research models used
 
 Three papers meaningfully changed the results:
 
@@ -124,7 +124,7 @@ Pulls fraud ring embeddings together in representation space, pushes them away f
 
 ---
 
-## running it
+## Running it
 
 ```bash
 pip install -r requirements.txt
@@ -153,7 +153,7 @@ python -m pytest tests/ -v
 
 ---
 
-## web console
+## Web console
 
 The console has four panels:
 
@@ -167,7 +167,7 @@ The console has four panels:
 
 ---
 
-## important notes
+## Important notes
 
 **No auto-blocking.** Every model output is advisory. The system produces a risk tier (LOW/MEDIUM/HIGH/CRITICAL) and recommended action. Actual account actions require explicit human analyst confirmation, logged to a durable audit trail.
 
@@ -177,7 +177,7 @@ The console has four panels:
 
 ---
 
-## things that didn't work (and why)
+## Things that didn't work (and why)
 
 **Real-time GNN inference** — Running graph aggregation on every payment event took ~85ms per request. Non-starter for payment gateways. The fix was nearline Redis caching: GNN embeddings are computed in background batches and served from cache at < 1ms.
 
@@ -187,7 +187,7 @@ The console has four panels:
 
 ---
 
-## tests
+## Tests
 
 ```
 tests/test_api.py           — 15 API endpoint tests
