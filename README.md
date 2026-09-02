@@ -57,13 +57,25 @@ I manually constructed a "low-and-slow" ring: 25 accounts, each making ₹20k tr
 
 Using ₹350 per false positive (analyst review time) and ₹42,000 per false negative (average ring payout before detection):
 
-| System | Expected Cost / 10k Tx |
-|---|---|
-| Logistic Regression | ₹474,369 |
-| XGBoost | ₹91,172 |
-| **Two-Stage Cascade** | **₹77,107** |
+| System | Expected Cost / 10k Tx | Latency | Production-ready? |
+|---|---|---|---|
+| Logistic Regression | ₹474,369 | 1.2ms | ✅ (but terrible cost) |
+| **GAT graph alone** | **₹546,700** | **~85ms** | ❌ (too slow + worst cost) |
+| XGBoost alone | ₹91,172 | 5.8ms | ✅ |
+| **Two-Stage Cascade** | **₹77,107** | **0.78ms** | ✅ |
 
-~₹48k savings per 10,000 transactions compared to a standard XGBoost setup.
+The most counterintuitive result: the graph model *alone* is actually the worst performer on cost (₹546,700 — worse than logistic regression). Here's why.
+
+Under 0.13% fraud prevalence, 99.87% of accounts are clean. When you run graph message passing on this, the signal from the tiny minority of fraud nodes gets averaged out by the massive majority of clean neighbors. The model effectively learns to predict "clean" for everything — 0% recall, 13 fraud cases missed per 10k transactions, 13 × ₹42,000 = ₹546,000 in missed payouts.
+
+It also runs at ~85ms per transaction. Payment gateways need < 15ms. So it fails on both dimensions individually.
+
+The cascade fixes both problems:
+- XGBoost handles the recall problem (catches individual fraud signals)
+- Graph handles the ring problem (catches coordinated multi-account collusion)
+- Redis nearline caching fixes the latency (pre-computed embeddings, O(1) lookup at 0.78ms)
+
+The ₹14,065 improvement over standalone XGBoost (₹91,172 → ₹77,107) comes entirely from the graph catching coordinated ring cases that XGBoost misses — specifically accounts that look individually clean but are funneling money to a shared exit node.
 
 ---
 
