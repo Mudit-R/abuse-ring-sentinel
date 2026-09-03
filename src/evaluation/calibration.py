@@ -1,22 +1,24 @@
 """
 src/evaluation/calibration.py
 ──────────────────────────────────────────────────────────────────────────────
-Probability Calibration & Reliability Assessment for Fraud Risk Models.
+Probability Calibration, Prior Correction, and Bayes-Optimal Decisioning.
 
-Under extreme class imbalance (0.13% fraud base rate), tree and neural network
-raw predicted probabilities are often uncalibrated. This module evaluates and
-corrects probability calibration using Isotonic Regression and Platt Scaling.
-
-Key Metrics:
-  - Brier Score (mean squared error of probability forecasts)
-  - Expected Calibration Error (ECE across 10 probability bins)
-  - Reliability Diagram coordinate generation
+Conforms to Sections 0, 13, 14, and 15 of the Merchant Fraud GNN Specification:
+1. Prior Correction for Oversampled Training Priors (Section 14):
+   odds_deploy = odds_sampled * [pi_d / (1 - pi_d)] / [pi_s / (1 - pi_s)]
+2. Calibration Comparison (Section 13):
+   - Platt Scaling (Sigmoid)
+   - Temperature Scaling (Logit Temperature T)
+   - Isotonic Regression (Monotonic Non-Decreasing Step Function)
+3. Mathematical Cost-Aware Thresholding (Section 0 & 15):
+   T*_Bayes = C_FP / (C_FP + C_FN) = 350 / (350 + 42000) ~= 0.008264 (0.83%)
+   Clarified against Operational Cascade Threshold T* = 0.42 (analyst budget-bounded).
 """
-
 from __future__ import annotations
 
-from typing import Dict, Tuple, List, Any
+from typing import Dict, Tuple, List, Any, Optional
 import numpy as np
+from scipy.optimize import minimize
 from sklearn.calibration import calibration_curve
 from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
@@ -45,8 +47,65 @@ def compute_ece(y_true: np.ndarray, y_prob: np.ndarray, n_bins: int = 10) -> flo
     return float(ece)
 
 
+def correct_for_sampled_prior(
+    y_prob_sampled: np.ndarray,
+    pi_sampled: float,
+    pi_deploy: float = 0.0013,
+    epsilon: float = 1e-7,
+) -> np.ndarray:
+    """
+    Applies odds transformation to correct for training-time positive oversampling (Section 14).
+        odds_deploy = odds_sampled * [pi_d / (1 - pi_d)] / [pi_s / (1 - pi_s)]
+        p_deploy = odds_deploy / (1 + odds_deploy)
+    """
+    p_clipped = np.clip(y_prob_sampled, epsilon, 1.0 - epsilon)
+    odds_sampled = p_clipped / (1.0 - p_clipped)
+
+    deploy_factor = (pi_deploy / (1.0 - pi_deploy)) / (pi_sampled / (1.0 - pi_sampled))
+    odds_deploy = odds_sampled * deploy_factor
+    p_deploy = odds_deploy / (1.0 + odds_deploy)
+
+    return np.clip(p_deploy, 0.0, 1.0)
+
+
+def compute_bayes_optimal_threshold(
+    cost_fp: float = 350.0,
+    cost_fn: float = 42000.0,
+) -> float:
+    """
+    Mathematically exact Bayes-optimal threshold for calibrated probabilities:
+        T* = C_FP / (C_FP + C_FN)
+    For INR 350 FP and INR 42,000 FN, yields ~0.008264 (0.83%).
+    """
+    return cost_fp / (cost_fp + cost_fn)
+
+
+class TemperatureScaler:
+    """Optimizes temperature T > 0 on validation set to calibrate neural logits."""
+
+    def __init__(self) -> None:
+        self.temperature: float = 1.0
+
+    def fit(self, logits: np.ndarray, y_true: np.ndarray) -> "TemperatureScaler":
+        def nll(t_val):
+            t = max(t_val[0], 1e-2)
+            scaled = np.clip(logits / t, -30.0, 30.0)
+            p = 1.0 / (1.0 + np.exp(-scaled))
+            p = np.clip(p, 1e-7, 1.0 - 1e-7)
+            return -np.mean(y_true * np.log(p) + (1.0 - y_true) * np.log(1.0 - p))
+
+        res = minimize(nll, [1.0], method="Nelder-Mead")
+        self.temperature = float(max(res.x[0], 0.05))
+        return self
+
+    def predict_proba(self, logits: np.ndarray) -> np.ndarray:
+        scaled = np.clip(logits / self.temperature, -30.0, 30.0)
+        p = 1.0 / (1.0 + np.exp(-scaled))
+        return np.clip(p, 0.0, 1.0)
+
+
 class ProbabilityCalibrator:
-    """Calibrates model probability outputs using Isotonic Regression or Platt Scaling."""
+    """Calibrates model probability outputs using Isotonic Regression, Platt Scaling, or Temperature Scaling."""
 
     def __init__(self, method: str = "isotonic"):
         self.method = method
@@ -54,6 +113,8 @@ class ProbabilityCalibrator:
             self.calibrator = IsotonicRegression(out_of_bounds="clip")
         elif method == "platt":
             self.calibrator = LogisticRegression(solver="lbfgs")
+        elif method == "temperature":
+            self.calibrator = TemperatureScaler()
         else:
             raise ValueError(f"Unknown calibration method: {method}")
         self.is_fitted = False
@@ -61,6 +122,11 @@ class ProbabilityCalibrator:
     def fit(self, y_prob_val: np.ndarray, y_true_val: np.ndarray) -> "ProbabilityCalibrator":
         if self.method == "isotonic":
             self.calibrator.fit(y_prob_val, y_true_val)
+        elif self.method == "temperature":
+            # Invert sigmoid to approximate logits
+            p_clip = np.clip(y_prob_val, 1e-6, 1.0 - 1e-6)
+            logits = np.log(p_clip / (1.0 - p_clip))
+            self.calibrator.fit(logits, y_true_val)
         else:
             self.calibrator.fit(y_prob_val.reshape(-1, 1), y_true_val)
         self.is_fitted = True
@@ -71,6 +137,10 @@ class ProbabilityCalibrator:
             return y_prob
         if self.method == "isotonic":
             return np.clip(self.calibrator.predict(y_prob), 0.0, 1.0)
+        elif self.method == "temperature":
+            p_clip = np.clip(y_prob, 1e-6, 1.0 - 1e-6)
+            logits = np.log(p_clip / (1.0 - p_clip))
+            return self.calibrator.predict_proba(logits)
         else:
             return self.calibrator.predict_proba(y_prob.reshape(-1, 1))[:, 1]
 
@@ -79,9 +149,7 @@ class ProbabilityCalibrator:
         y_true_test: np.ndarray,
         y_prob_uncalibrated: np.ndarray,
     ) -> Dict[str, Any]:
-        """
-        Calculates before and after calibration metrics and reliability diagram data.
-        """
+        """Calculates before and after calibration metrics and reliability diagram data."""
         y_prob_calibrated = self.calibrate(y_prob_uncalibrated)
 
         uncal_brier = compute_brier_score(y_true_test, y_prob_uncalibrated)
@@ -109,4 +177,33 @@ class ProbabilityCalibrator:
             },
             "brier_reduction_pct": round((1.0 - cal_brier / max(uncal_brier, 1e-6)) * 100, 2),
             "ece_reduction_pct": round((1.0 - cal_ece / max(uncal_ece, 1e-6)) * 100, 2),
+            "bayes_optimal_threshold": round(compute_bayes_optimal_threshold(), 6),
+            "operational_threshold": 0.42,
         }
+
+
+def compare_calibration_methods(
+    y_true_val: np.ndarray,
+    y_prob_val: np.ndarray,
+    y_true_test: np.ndarray,
+    y_prob_test: np.ndarray,
+) -> Dict[str, Dict[str, float]]:
+    """
+    Compares Platt Scaling, Temperature Scaling, and Isotonic Regression side-by-side (Section 13).
+    """
+    methods = ["platt", "temperature", "isotonic"]
+    results = {}
+
+    uncal_brier = compute_brier_score(y_true_test, y_prob_test)
+    uncal_ece = compute_ece(y_true_test, y_prob_test)
+    results["Uncalibrated"] = {"brier_score": round(uncal_brier, 5), "ece": round(uncal_ece, 5)}
+
+    for m in methods:
+        cal = ProbabilityCalibrator(method=m).fit(y_prob_val, y_true_val)
+        p_cal = cal.calibrate(y_prob_test)
+        results[m.capitalize()] = {
+            "brier_score": round(compute_brier_score(y_true_test, p_cal), 5),
+            "ece": round(compute_ece(y_true_test, p_cal), 5),
+        }
+
+    return results

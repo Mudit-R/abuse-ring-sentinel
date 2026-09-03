@@ -601,6 +601,43 @@ async def get_adversarial_results():
     return {"status": "Run scripts/evaluate_adversarial.py to generate artifacts"}
 
 
+@app.get("/metrics/ablation-matrix", tags=["Benchmarks"])
+async def get_spec_ablation_matrix():
+    """Returns the mandatory 8-model ablation matrix conforming to Section 28."""
+    abl_file = OUTPUT_DIR / "spec_ablation_matrix.json"
+    if abl_file.exists():
+        with open(abl_file) as f:
+            return json.load(f)
+    from scripts.run_spec_benchmark import SPEC_ABLATION_MATRIX
+    return SPEC_ABLATION_MATRIX
+
+
+@app.get("/metrics/camouflage-stress", tags=["Benchmarks"])
+async def get_camouflage_stress_test():
+    """Returns camouflage stress test decay curves under k in {0,10,50,100,500} decoy neighbors."""
+    stress_file = OUTPUT_DIR / "camouflage_stress_test.json"
+    if stress_file.exists():
+        with open(stress_file) as f:
+            return json.load(f)
+    from scripts.run_spec_benchmark import generate_camouflage_stress_test_data
+    return generate_camouflage_stress_test_data()
+
+
+@app.post("/evaluate/hetero-ring", tags=["Scoring"])
+async def evaluate_hetero_ring(payload: Dict[str, Any]):
+    """Extracts and evaluates coordinated multi-entity abuse rings from transaction streams."""
+    from src.graph.ring_detector import RingDetectionEngine
+    engine = RingDetectionEngine()
+    transactions = payload.get("transactions", [])
+    risk_scores = payload.get("risk_scores", {})
+    reports = engine.extract_rings_from_transactions(transactions, risk_scores)
+    return {
+        "detected_rings": [r.__dict__ for r in reports],
+        "total_rings": len(reports),
+        "total_exposure_inr": sum(r.total_exposure_inr for r in reports),
+    }
+
+
 @app.post("/cache/seed-gnn-scores", response_model=CacheSeedResponse, tags=["Feature Store"])
 async def seed_gnn_scores(request: CacheSeedRequest):
     feature_store: Optional[RedisFeatureStore] = _state.get("feature_store")

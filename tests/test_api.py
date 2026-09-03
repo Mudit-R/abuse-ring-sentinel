@@ -167,3 +167,31 @@ class TestEvaluationEndpoints:
     def test_get_adversarial(self, client):
         resp = client.get("/evaluation/adversarial")
         assert resp.status_code == 200
+
+    def test_get_spec_ablation_matrix(self, client):
+        resp = client.get("/metrics/ablation-matrix")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 8
+        assert data[0]["model"] == "XGBoost Standalone"
+
+    def test_get_camouflage_stress_test(self, client):
+        resp = client.get("/metrics/camouflage-stress")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "k_injected_decoy_neighbors" in data
+        assert "curves" in data
+
+    def test_evaluate_hetero_ring(self, client):
+        payload = {
+            "transactions": [
+                {"transaction_id": "t1", "customer_id": "c1", "device_id": "d1", "amount": 1000.0, "timestamp": 100.0},
+                {"transaction_id": "t2", "customer_id": "c2", "device_id": "d1", "amount": 1200.0, "timestamp": 105.0},
+            ],
+            "risk_scores": {"c1": 0.8, "c2": 0.85},
+        }
+        resp = client.post("/evaluate/hetero-ring", json=payload)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "total_rings" in data
+        assert data["total_rings"] >= 1
