@@ -1,15 +1,9 @@
-﻿{
-  "version": 2,
+{
   "cleanUrls": true,
-  "trailingSlash": false,
-  "routes": [
+  "rewrites": [
     {
-      "src": "/console",
-      "dest": "/console.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
+      "source": "/console",
+      "destination": "/console.html"
     }
   ]
 }
