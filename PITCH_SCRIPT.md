@@ -43,7 +43,7 @@
 ---
 
 ### [01:45 – 02:45] The Explainability Triad
-* **On Screen**: Click **Risk Evaluator** tab. Pick the preset **"Promo-Abuse Ring"** and click **"Score Transaction"**.
+* **On Screen**: Click **Risk Evaluator & Briefings** tab. Simply click the preset pill **"1. Promo-Abuse Ring"** (or click the purple button at the bottom: **"Evaluate Sentinel Risk Score"**).
 * **Say Naturally**:
 > "A risk score by itself doesn't help an operations team. If an analyst gets an alert, they need to know why.
 >
