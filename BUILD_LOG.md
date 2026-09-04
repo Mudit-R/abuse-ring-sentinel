@@ -7,7 +7,7 @@
 
 ---
 
-## ️ Build Log & Failure Recovery Records ("What Broke, and How We Got Out")
+## Build Log & Failure Recovery Records ("What Broke, and How We Got Out")
 
 Here is the transparent, chronological record of real engineering roadblocks encountered during development and how each was resolved with sound engineering judgment.
 

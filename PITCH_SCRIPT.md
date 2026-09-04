@@ -8,7 +8,7 @@
 
 ---
 
-## ⏱️ Video Breakdown & Timestamped Script
+## Video Breakdown & Timestamped Script
 
 ---
 

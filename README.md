@@ -11,9 +11,9 @@
 [![Live Demo](https://img.shields.io/badge/Live_Console-GitHub_Pages-00D4FF?style=for-the-badge&logo=github&logoColor=white)](https://mudit-r.github.io/abuse-ring-sentinel/console.html)
 [![CI Drift Guard](https://img.shields.io/badge/CI_Drift_Guard-Active-635BFF?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com)
 
-> ⚡ **Live Deployed Web Console (Vercel)**: [https://abuse-ring-sentinel-rp.vercel.app/console.html](https://abuse-ring-sentinel-rp.vercel.app/console.html)  
-> 🏠 **Project Landing Page**: [https://abuse-ring-sentinel-rp.vercel.app/](https://abuse-ring-sentinel-rp.vercel.app/)  
-> 🌐 **Alternative Mirror (GitHub Pages)**: [https://mudit-r.github.io/abuse-ring-sentinel/console.html](https://mudit-r.github.io/abuse-ring-sentinel/console.html)
+> **Live Deployed Web Console (Vercel)**: [https://abuse-ring-sentinel-rp.vercel.app/console.html](https://abuse-ring-sentinel-rp.vercel.app/console.html)  
+> **Project Landing Page**: [https://abuse-ring-sentinel-rp.vercel.app/](https://abuse-ring-sentinel-rp.vercel.app/)  
+> **Alternative Mirror (GitHub Pages)**: [https://mudit-r.github.io/abuse-ring-sentinel/console.html](https://mudit-r.github.io/abuse-ring-sentinel/console.html)
 
 ---
 
@@ -68,14 +68,14 @@ Conforming to Section 28 of the Merchant Fraud GNN Specification, evaluating pro
 
 | Model Configuration | AUPRC | Recall@1bp | Precision@K | Dollar Capture | Ring Recall | ECE | Expected Cost | p50 | p99 | SLA (<15ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|:---:|
-| **1. XGBoost Standalone** | 0.0861 | 14.2% | 92.0% | 68.4% | 18.0% | 0.048 | ₹91,172 | 5.80ms | 11.20ms | ✅ PASS |
-| **2. GATv2 Standalone** | 0.0448 | 8.0% | 13.0% | 32.1% | 72.0% | 0.112 | ₹546,700 | 84.50ms | 142.00ms | ❌ FAIL |
-| **3. FraudHGT (Heterogeneous)** | 0.0685 | 18.4% | 76.0% | 74.2% | 79.0% | 0.062 | ₹118,400 | 0.85ms | 4.10ms | ✅ PASS |
-| **4. FraudHGT + PC-GNN** | 0.0825 | 22.5% | 84.0% | 81.6% | 84.0% | 0.044 | ₹88,600 | 0.82ms | 3.90ms | ✅ PASS |
-| **5. FraudHGT + PC-GNN + CARE** | 0.0864 | 24.8% | 89.0% | 85.0% | 88.0% | 0.038 | ₹81,900 | 0.80ms | 3.60ms | ✅ PASS |
-| **6. + Contrastive InfoNCE** | 0.0892 | 27.1% | 92.0% | 88.5% | 92.0% | 0.031 | ₹77,107 | 0.78ms | 3.40ms | ✅ PASS |
-| **7. + Chebyshev Spectral (K=2)** | **0.0908** | **28.3%** | **93.0%** | **89.8%** | **93.5%** | **0.029** | **₹74,850** | **0.81ms** | **3.50ms** | ✅ PASS |
-| **8. + Adaptive RL Selector (Exp)** | **0.0915** | **29.0%** | **93.5%** | **90.6%** | **94.0%** | **0.028** | **₹73,200** | **0.89ms** | **3.80ms** | ✅ PASS |
+| **1. XGBoost Standalone** | 0.0861 | 14.2% | 92.0% | 68.4% | 18.0% | 0.048 | ₹91,172 | 5.80ms | 11.20ms | PASS |
+| **2. GATv2 Standalone** | 0.0448 | 8.0% | 13.0% | 32.1% | 72.0% | 0.112 | ₹546,700 | 84.50ms | 142.00ms | FAIL |
+| **3. FraudHGT (Heterogeneous)** | 0.0685 | 18.4% | 76.0% | 74.2% | 79.0% | 0.062 | ₹118,400 | 0.85ms | 4.10ms | PASS |
+| **4. FraudHGT + PC-GNN** | 0.0825 | 22.5% | 84.0% | 81.6% | 84.0% | 0.044 | ₹88,600 | 0.82ms | 3.90ms | PASS |
+| **5. FraudHGT + PC-GNN + CARE** | 0.0864 | 24.8% | 89.0% | 85.0% | 88.0% | 0.038 | ₹81,900 | 0.80ms | 3.60ms | PASS |
+| **6. + Contrastive InfoNCE** | 0.0892 | 27.1% | 92.0% | 88.5% | 92.0% | 0.031 | ₹77,107 | 0.78ms | 3.40ms | PASS |
+| **7. + Chebyshev Spectral (K=2)** | **0.0908** | **28.3%** | **93.0%** | **89.8%** | **93.5%** | **0.029** | **₹74,850** | **0.81ms** | **3.50ms** | PASS |
+| **8. + Adaptive RL Selector (Exp)** | **0.0915** | **29.0%** | **93.5%** | **90.6%** | **94.0%** | **0.028** | **₹73,200** | **0.89ms** | **3.80ms** | PASS |
 
 ---
 
