@@ -64,11 +64,13 @@
 >
 > In real payment data, fraud is rare—about 0.13 percent. If you use a default threshold of 0.50, standard F1 score collapses because clean transactions outnumber fraud by almost a thousand to one.
 >
-> So instead of hiding behind vanity metrics, I measure Precision at 100 alerts, where this cascade hits 93.5 percent precision.
+> So instead of hiding behind vanity metrics, I measure Precision at 100 alerts, where this cascade hits 92 percent precision.
 >
-> Even better, I built a FinOps Cost Model. An unnecessary manual review costs about 350 rupees of analyst time. But missing a fraud ring costs about 42,000 rupees.
+> Even better, I built a FinOps Cost Model. An unnecessary manual review costs about 350 rupees of analyst time, while missing a fraud ring costs about 42,000 rupees.
 >
-> As I move this threshold slider, you can see the expected business loss changing dynamically. The sweet spot is a threshold of 0.42, which minimizes total financial loss and saves over 48,000 rupees per 10,000 transactions."
+> As I move this threshold slider, you can see the expected business loss changing dynamically. If we set the threshold too low, analyst queues get overwhelmed with false alarms. If we set it too high, missed fraud rings devastate the bottom line.
+>
+> The sweet spot is our operational threshold of 0.42, which minimizes total financial loss to 77,000 rupees—saving over 48,000 rupees per 10,000 transactions compared to baseline."
 
 ---
 
