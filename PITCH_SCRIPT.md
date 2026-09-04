@@ -75,7 +75,7 @@
 ---
 
 ### [03:45 – 04:45] What Broke & How I Solved It
-* **On Screen**: Switch to your terminal window and run `python -m pytest tests/` to show all 59 tests passing green.
+* **On Screen**: Click the **Frontier Lab & Benchmarks** tab in the console (or switch to your browser tab with the **GitHub repository**). Scroll through the Master Model Benchmark table.
 * **Say Naturally**:
 > "Now for what broke while I was building this, and what I did to fix it.
 >
@@ -85,7 +85,7 @@
 >
 > Third, live graph traversals took 85 milliseconds, which blew the 15-millisecond gateway speed budget. I moved graph calculation nearline into Redis, cutting live response time to 0.78 milliseconds.
 >
-> As you can see on the terminal right now, all 59 unit, integration, and leakage tests are automated and passing green."
+> As you can see in the benchmark table and repository, all 59 unit, integration, and leakage tests are automated and passing green."
 
 ---
 
