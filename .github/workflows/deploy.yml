@@ -1,4 +1,4 @@
-name: Deploy Interactive Neobrutalism Demo to GitHub Pages
+name: Deploy Abuse-Ring Sentinel to GitHub Pages
 
 on:
   push:
