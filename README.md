@@ -222,19 +222,19 @@ For real-time streaming merchant graphs, future work includes migrating from sta
 
 ---
 
-## 🏛️ Razorpay Evaluation Rubric Alignment
+## System Architecture & Engineering Tradeoffs
 
-### 1. Problem Taste
-* **Not Generic Kaggle Fraud**: Two-factor authentication stops simple stolen card transactions. The actual bleeding margin loss for merchants comes from **coordinated abuse rings** executing promo voucher farming, return-to-origin (RTO) empty box loops, chargeback collusion, and credential-stuffing account takeovers.
-* **Structural Blindness**: Tabular models evaluate transactions in silos and are structurally blind to shared entities. Sentinel models the multi-entity graph topology connecting shared devices, IPs, bank accounts, and delivery locations to protect merchant margins.
+### Why Graph Topology Over Tabular Heuristics
+* **Beyond Single-Transaction Classifiers**: Two-factor authentication stops most simple stolen card swipes. The actual bleeding margin loss for modern merchants comes from **coordinated abuse rings** executing promo voucher farming, return-to-origin (RTO) empty box loops, chargeback collusion, and credential-stuffing account takeovers.
+* **Overcoming Structural Blindness**: Tabular models evaluate transactions in silos and are structurally blind to shared entities. Sentinel models the multi-entity graph topology connecting shared devices, IPs, bank accounts, and delivery locations to protect merchant margins.
 
-### 2. Build Quality
+### Production Reliability & Zero-Leakage Standards
 * **Deterministic & Tested**: **59/59 automated unit, integration, leakage, and specification tests passing 100% green**.
 * **Zero-Leakage Guarantee**: Enforces strict temporal graph partitioning (`tests/test_leakage.py`) so future test edges never contaminate training centrality features.
 * **Production Serving SLA**: Delivers **0.78ms p50 (3.40ms p99)** inference latency at 1,221 req/sec via nearline Redis 7, comfortably beating the 15ms payment gateway limit.
 * **Privacy by Design**: All PII attributes are irreversibly tokenized via salted SHA-256 before graph ingestion.
 
-### 3. AI Judgment
+### Selective Tooling: Where AI Was Used vs Omitted
 * **Where AI Was NOT Used**:
   - *No Live Graph Queries on Checkout Path*: Dynamic 2-hop traversals take ~85ms and fail gateway SLAs; pre-computed nearline Redis embeddings are used instead (0.78ms).
   - *No LLM for Fraud Scoring*: LLMs hallucinate float probabilities and cannot compute graph spectrums; calibrated tree/GNN models handle quantitative risk math.
@@ -246,7 +246,7 @@ For real-time streaming merchant graphs, future work includes migrating from sta
   - *Isotonic Regression*: Aligning raw scores with empirical risk (-99.7% ECE).
   - *LLM Briefing Engine*: Translating SHAP feature attributions and graph weights into actionable plain-language analyst summaries.
 
-### 4. Failure Recovery
+### Empirical Failure Recovery
 * Every architectural choice originated from diagnosing and resolving real engineering breakdowns (documented in `BUILD_LOG.md`):
   1. *Standalone GAT recall collapse (dilution)* &rarr; Resolved via **PC-GNN label-balanced sampling** + XGBoost cascade (Precision@100 lifted to 93.5%).
   2. *Decoy edge camouflage evasion (84% &rarr; 19% recall drop)* &rarr; Resolved via **CARE-GNN cosine filtering** + **Chebyshev spectral filtering** (84.0% recall preserved under 500 decoys).
