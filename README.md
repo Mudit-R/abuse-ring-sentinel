@@ -7,13 +7,13 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.141-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
 [![Redis 7](https://img.shields.io/badge/Redis_7-Sub--1ms_SLA-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io)
 [![Test Suite](https://img.shields.io/badge/Tests-59_Passed_100%25-00C853?style=for-the-badge&logo=pytest)](https://pytest.org)
-[![Vercel Deployment](https://img.shields.io/badge/Deploy-Vercel-black?style=for-the-badge&logo=vercel&logoColor=white)](https://abuse-ring-sentinel.vercel.app/console.html)
+[![Vercel Deployment](https://img.shields.io/badge/Deploy-Vercel-black?style=for-the-badge&logo=vercel&logoColor=white)](https://abuse-ring-sentinel-rp.vercel.app/console.html)
 [![Live Demo](https://img.shields.io/badge/Live_Console-GitHub_Pages-00D4FF?style=for-the-badge&logo=github&logoColor=white)](https://mudit-r.github.io/abuse-ring-sentinel/console.html)
 [![CI Drift Guard](https://img.shields.io/badge/CI_Drift_Guard-Active-635BFF?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com)
 
-> ⚡ **Live Deployed Web Console (Vercel)**: [https://abuse-ring-sentinel.vercel.app/console.html](https://abuse-ring-sentinel.vercel.app/console.html)  
-> 🌐 **Live Web Console (GitHub Pages)**: [https://mudit-r.github.io/abuse-ring-sentinel/console.html](https://mudit-r.github.io/abuse-ring-sentinel/console.html)  
-> 🏠 **Project Landing Page**: [https://abuse-ring-sentinel.vercel.app/](https://abuse-ring-sentinel.vercel.app/)
+> ⚡ **Live Deployed Web Console (Vercel)**: [https://abuse-ring-sentinel-rp.vercel.app/console.html](https://abuse-ring-sentinel-rp.vercel.app/console.html)  
+> 🏠 **Project Landing Page**: [https://abuse-ring-sentinel-rp.vercel.app/](https://abuse-ring-sentinel-rp.vercel.app/)  
+> 🌐 **Alternative Mirror (GitHub Pages)**: [https://mudit-r.github.io/abuse-ring-sentinel/console.html](https://mudit-r.github.io/abuse-ring-sentinel/console.html)
 
 ---
 
