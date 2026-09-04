@@ -222,34 +222,71 @@ For real-time streaming merchant graphs, future work includes migrating from sta
 
 ---
 
+## 🏛️ Razorpay Evaluation Rubric Alignment
+
+### 1. Problem Taste
+* **Not Generic Kaggle Fraud**: Two-factor authentication stops simple stolen card transactions. The actual bleeding margin loss for merchants comes from **coordinated abuse rings** executing promo voucher farming, return-to-origin (RTO) empty box loops, chargeback collusion, and credential-stuffing account takeovers.
+* **Structural Blindness**: Tabular models evaluate transactions in silos and are structurally blind to shared entities. Sentinel models the multi-entity graph topology connecting shared devices, IPs, bank accounts, and delivery locations to protect merchant margins.
+
+### 2. Build Quality
+* **Deterministic & Tested**: **59/59 automated unit, integration, leakage, and specification tests passing 100% green**.
+* **Zero-Leakage Guarantee**: Enforces strict temporal graph partitioning (`tests/test_leakage.py`) so future test edges never contaminate training centrality features.
+* **Production Serving SLA**: Delivers **0.78ms p50 (3.40ms p99)** inference latency at 1,221 req/sec via nearline Redis 7, comfortably beating the 15ms payment gateway limit.
+* **Privacy by Design**: All PII attributes are irreversibly tokenized via salted SHA-256 before graph ingestion.
+
+### 3. AI Judgment
+* **Where AI Was NOT Used**:
+  - *No Live Graph Queries on Checkout Path*: Dynamic 2-hop traversals take ~85ms and fail gateway SLAs; pre-computed nearline Redis embeddings are used instead (0.78ms).
+  - *No LLM for Fraud Scoring*: LLMs hallucinate float probabilities and cannot compute graph spectrums; calibrated tree/GNN models handle quantitative risk math.
+  - *No Heavy Deep Learning on Clean Traffic*: An XGBoost gatekeeper sheds 98% of clean traffic in 0.5ms without wasting GPU cycles.
+  - *No Automated Account Freezing*: Code paths strictly bar automated blocking; AI outputs advisory risk tiers, leaving intervention to human analysts.
+* **Where AI Was Used**:
+  - *Heterogeneous Graph Transformer (FraudHGT)*: For multi-entity relational attention across 20 node types.
+  - *Chebyshev Normalized Laplacian Spectral Filter (K=2)*: High-pass boundary filtering to defeat relation camouflage.
+  - *Isotonic Regression*: Aligning raw scores with empirical risk (-99.7% ECE).
+  - *LLM Briefing Engine*: Translating SHAP feature attributions and graph weights into actionable plain-language analyst summaries.
+
+### 4. Failure Recovery
+* Every architectural choice originated from diagnosing and resolving real engineering breakdowns (documented in `BUILD_LOG.md`):
+  1. *Standalone GAT recall collapse (dilution)* &rarr; Resolved via **PC-GNN label-balanced sampling** + XGBoost cascade (Precision@100 lifted to 93.5%).
+  2. *Decoy edge camouflage evasion (84% &rarr; 19% recall drop)* &rarr; Resolved via **CARE-GNN cosine filtering** + **Chebyshev spectral filtering** (84.0% recall preserved under 500 decoys).
+  3. *84.5ms checkout latency bottleneck* &rarr; Resolved via **nearline Redis 7 pre-computed embedding cache** (0.78ms p50).
+  4. *Graph centrality temporal data leakage* &rarr; Resolved via **strict temporal graph slicing** and automated regression tests in `test_leakage.py`.
+  5. *Bayes-optimal 0.83% alert fatigue* &rarr; Resolved via **FinOps Cost Model** operating at $T^* = 0.42$ constrained by real-world shift review quotas.
+
+---
+
 ## Quick Start & CLI Reproduction
 
 ```powershell
 # 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Run complete test suite (43 tests: API, Graph, Features, Leakage, Tier 4)
+# 2. Run complete test suite (59 tests: API, Graph, Features, Leakage, Spec, Tier 4)
 python -m pytest tests/
 
 # 3. Reproduce master benchmark comparison & cost model
 python scripts/reproduce_benchmark.py
 
-# 4. Run serving latency SLA benchmark (p50/p95/p99)
+# 4. Run Section 28 8-model ablation matrix & Section 18 camouflage stress test
+python scripts/run_spec_benchmark.py
+
+# 5. Run serving latency SLA benchmark (p50/p95/p99)
 python scripts/benchmark_latency.py
 
-# 5. Run feature ablation study
+# 6. Run feature ablation study
 python scripts/run_ablation_study.py
 
-# 6. Run probability calibration
+# 7. Run probability calibration
 python scripts/calibrate_probabilities.py
 
-# 7. Run adversarial robustness evaluation
+# 8. Run adversarial robustness evaluation
 python scripts/evaluate_adversarial.py
 
-# 8. Run Tier 4 research benchmark (PC-GNN & CARE-GNN)
+# 9. Run Tier 4 research benchmark (PC-GNN & CARE-GNN)
 python scripts/evaluate_tier4_research.py
 
-# 9. Launch FastAPI serving layer & Web Console
+# 10. Launch FastAPI serving layer & Web Console
 uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 ```
 
