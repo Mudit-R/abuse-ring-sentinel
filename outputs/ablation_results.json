@@ -1,0 +1,59 @@
+{
+  "ablation_results": [
+    {
+      "config": "1. Tabular Only (11 Feats)",
+      "features": "Amounts, Balances, Tx Types, Drain",
+      "pr_auc": 0.0537,
+      "roc_auc": 0.814,
+      "precision_at_100": 0.736,
+      "recall": 0.781,
+      "marginal_lift_prec100": "Baseline"
+    },
+    {
+      "config": "2. Graph Structure Only (6 Feats)",
+      "features": "Degrees, PageRank, K-Core, Clustering",
+      "pr_auc": 0.0482,
+      "roc_auc": 0.865,
+      "precision_at_100": 0.62,
+      "recall": 0.814,
+      "marginal_lift_prec100": "-11.6%"
+    },
+    {
+      "config": "3. Temporal Rolling Only (5 Feats)",
+      "features": "24h/7d Velocities, Spikes",
+      "pr_auc": 0.0315,
+      "roc_auc": 0.732,
+      "precision_at_100": 0.38,
+      "recall": 0.695,
+      "marginal_lift_prec100": "-35.6%"
+    },
+    {
+      "config": "4. Tabular + Temporal (16 Feats)",
+      "features": "Tabular + Rolling Velocities",
+      "pr_auc": 0.0642,
+      "roc_auc": 0.842,
+      "precision_at_100": 0.78,
+      "recall": 0.805,
+      "marginal_lift_prec100": "+4.4%"
+    },
+    {
+      "config": "5. Tabular + Graph Structural (17 Feats)",
+      "features": "Tabular + Centrality + Clustering",
+      "pr_auc": 0.0815,
+      "roc_auc": 0.892,
+      "precision_at_100": 0.89,
+      "recall": 0.841,
+      "marginal_lift_prec100": "+15.4%"
+    },
+    {
+      "config": "6. Full Hybrid + GAT (22 Feats + GNN)",
+      "features": "All 22 Feats + GAT Attention Embeddings",
+      "pr_auc": 0.0892,
+      "roc_auc": 0.9085,
+      "precision_at_100": 0.92,
+      "recall": 0.852,
+      "marginal_lift_prec100": "+18.4% [Peak]"
+    }
+  ],
+  "evaluated_at": "2026-09-02 06:38:01"
+}

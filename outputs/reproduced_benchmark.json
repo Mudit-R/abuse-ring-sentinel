@@ -1,0 +1,135 @@
+{
+  "models": {
+    "Logistic Regression": {
+      "pr_auc": 0.0715,
+      "roc_auc": 0.6948,
+      "f1": 0.0172,
+      "recall": 0.7485,
+      "precision_at_100": 0.01,
+      "precision_at_500": 0.462,
+      "latency_sla": "< 1.2 ms",
+      "description": "Linear baseline with L2 regularization"
+    },
+    "LightGBM": {
+      "pr_auc": 0.0106,
+      "roc_auc": 0.6754,
+      "f1": 0.0188,
+      "recall": 0.9323,
+      "precision_at_100": 0.02,
+      "precision_at_500": 0.514,
+      "latency_sla": "< 3.5 ms",
+      "description": "Histogram-binned gradient boosting baseline"
+    },
+    "XGBoost (22 Features)": {
+      "pr_auc": 0.0861,
+      "roc_auc": 0.8725,
+      "f1": 0.0364,
+      "recall": 0.8343,
+      "precision_at_100": 0.92,
+      "precision_at_500": 0.258,
+      "latency_sla": "< 5.8 ms",
+      "description": "Standard tabular + structural gradient boosted trees"
+    },
+    "GNN \u2014 GCN (Isotropic)": {
+      "pr_auc": 0.0211,
+      "roc_auc": 0.6799,
+      "f1": 0.0,
+      "recall": 0.0,
+      "precision_at_100": 0.0,
+      "precision_at_500": 0.008,
+      "latency_sla": "~ 65.0 ms",
+      "description": "2-layer isotropic Graph Convolutional Network"
+    },
+    "GNN \u2014 GraphSAGE": {
+      "pr_auc": 0.0044,
+      "roc_auc": 0.7213,
+      "f1": 0.0,
+      "recall": 0.0,
+      "precision_at_100": 0.0,
+      "precision_at_500": 0.0,
+      "latency_sla": "~ 50.0 ms",
+      "description": "Inductive neighbourhood sampling with mean aggregation"
+    },
+    "GNN \u2014 GAT (Attention)": {
+      "pr_auc": 0.0448,
+      "roc_auc": 0.9129,
+      "f1": 0.0,
+      "recall": 0.0,
+      "precision_at_100": 0.13,
+      "precision_at_500": 0.13,
+      "latency_sla": "~ 85.0 ms",
+      "description": "Multi-head attention GNN capturing non-local ring patterns"
+    },
+    "Hybrid GAT + XGBoost Ensemble": {
+      "pr_auc": 0.0715,
+      "roc_auc": 0.8747,
+      "f1": 0.0367,
+      "recall": 0.8607,
+      "precision_at_100": 0.75,
+      "precision_at_500": 0.234,
+      "latency_sla": "< 0.85 ms (Redis)",
+      "description": "Production stacking ensemble blending graph attention & trees"
+    },
+    "Production Two-Stage Cascade": {
+      "pr_auc": 0.0892,
+      "roc_auc": 0.9085,
+      "f1": 0.0485,
+      "recall": 0.852,
+      "precision_at_100": 0.92,
+      "precision_at_500": 0.486,
+      "latency_sla": "< 0.85 ms (Redis)",
+      "description": "Consensus cascade combining XGBoost gatekeeper & nearline GAT"
+    }
+  },
+  "cost_model": {
+    "Logistic Regression": {
+      "expected_tp": 9.7,
+      "expected_fn": 3.3,
+      "expected_fp": 963,
+      "total_expected_cost_inr": 474369.0
+    },
+    "LightGBM": {
+      "expected_tp": 12.1,
+      "expected_fn": 0.9,
+      "expected_fp": 593,
+      "total_expected_cost_inr": 244514.2
+    },
+    "XGBoost (22 Features)": {
+      "expected_tp": 10.8,
+      "expected_fn": 2.2,
+      "expected_fp": 2,
+      "total_expected_cost_inr": 91172.2
+    },
+    "GNN \u2014 GCN (Isotropic)": {
+      "expected_tp": 0.0,
+      "expected_fn": 13.0,
+      "expected_fp": 0,
+      "total_expected_cost_inr": 546000.0
+    },
+    "GNN \u2014 GraphSAGE": {
+      "expected_tp": 0.0,
+      "expected_fn": 13.0,
+      "expected_fp": 0,
+      "total_expected_cost_inr": 546000.0
+    },
+    "GNN \u2014 GAT (Attention)": {
+      "expected_tp": 0.0,
+      "expected_fn": 13.0,
+      "expected_fp": 2,
+      "total_expected_cost_inr": 546700.0
+    },
+    "Hybrid GAT + XGBoost Ensemble": {
+      "expected_tp": 11.2,
+      "expected_fn": 1.8,
+      "expected_fp": 3,
+      "total_expected_cost_inr": 77107.8
+    },
+    "Production Two-Stage Cascade": {
+      "expected_tp": 11.1,
+      "expected_fn": 1.9,
+      "expected_fp": 2,
+      "total_expected_cost_inr": 81508.0
+    }
+  },
+  "reproduced_at": "2026-09-02 07:30:22"
+}

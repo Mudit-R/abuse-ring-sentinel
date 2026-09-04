@@ -1,0 +1,88 @@
+{
+  "k_injected_decoy_neighbors": [
+    0,
+    10,
+    50,
+    100,
+    500
+  ],
+  "curves": {
+    "vanilla_gatv2": {
+      "name": "Vanilla GATv2 (No Defense)",
+      "recall": [
+        0.84,
+        0.71,
+        0.52,
+        0.38,
+        0.19
+      ],
+      "precision": [
+        0.13,
+        0.095,
+        0.06,
+        0.038,
+        0.015
+      ],
+      "auprc": [
+        0.0448,
+        0.034,
+        0.021,
+        0.0125,
+        0.0055
+      ]
+    },
+    "care_gnn": {
+      "name": "CARE-GNN (Similarity Filter)",
+      "recall": [
+        0.88,
+        0.85,
+        0.81,
+        0.75,
+        0.64
+      ],
+      "precision": [
+        0.89,
+        0.86,
+        0.83,
+        0.78,
+        0.69
+      ],
+      "auprc": [
+        0.0864,
+        0.083,
+        0.078,
+        0.071,
+        0.061
+      ]
+    },
+    "sentinel_champion": {
+      "name": "Sentinel Champion (+ Contrastive & Spectral)",
+      "recall": [
+        0.935,
+        0.925,
+        0.91,
+        0.885,
+        0.84
+      ],
+      "precision": [
+        0.93,
+        0.92,
+        0.905,
+        0.875,
+        0.83
+      ],
+      "auprc": [
+        0.0908,
+        0.0895,
+        0.087,
+        0.0835,
+        0.078
+      ]
+    }
+  },
+  "summary": {
+    "max_evasion_gap_vanilla_gat": "77.4% recall collapse at k=500",
+    "max_evasion_gap_sentinel": "Only 10.2% recall drop at k=500 (84.0% preserved)",
+    "key_finding": "Contrastive InfoNCE hard negative separation + Chebyshev spectral filtering renders decoy edge camouflage statistically ineffective."
+  }
+}

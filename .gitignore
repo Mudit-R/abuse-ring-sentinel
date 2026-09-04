@@ -19,7 +19,8 @@ data/processed/
 *.pkl
 *.npz
 
-outputs/
+outputs/*
+!outputs/*.json
 !outputs/.gitkeep
 mlruns/
 mlartifacts/

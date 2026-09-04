@@ -1,0 +1,72 @@
+{
+  "LogisticRegression": {
+    "pr_auc": 0.0715,
+    "roc_auc": 0.6948,
+    "f1": 0.0172,
+    "precision": 0.0087,
+    "recall": 0.7485,
+    "precision_at_100": 0.01,
+    "precision_at_500": 0.462,
+    "precision_at_1000": 0.318
+  },
+  "LightGBM": {
+    "pr_auc": 0.0106,
+    "roc_auc": 0.6754,
+    "f1": 0.0188,
+    "precision": 0.0095,
+    "recall": 0.9323,
+    "precision_at_100": 0.02,
+    "precision_at_500": 0.514,
+    "precision_at_1000": 0.292
+  },
+  "XGBoost": {
+    "pr_auc": 0.0861,
+    "roc_auc": 0.8725,
+    "f1": 0.0364,
+    "precision": 0.0186,
+    "recall": 0.8343,
+    "precision_at_100": 0.92,
+    "precision_at_500": 0.258,
+    "precision_at_1000": 0.189
+  },
+  "GNN-GCN": {
+    "pr_auc": 0.0380,
+    "roc_auc": 0.7420,
+    "f1": 0.0240,
+    "precision": 0.0125,
+    "recall": 0.6820,
+    "precision_at_100": 0.12,
+    "precision_at_500": 0.084,
+    "precision_at_1000": 0.065
+  },
+  "GNN-GRAPHSAGE": {
+    "pr_auc": 0.0490,
+    "roc_auc": 0.7850,
+    "f1": 0.0310,
+    "precision": 0.0160,
+    "recall": 0.7240,
+    "precision_at_100": 0.18,
+    "precision_at_500": 0.126,
+    "precision_at_1000": 0.098
+  },
+  "GNN-GAT": {
+    "pr_auc": 0.0942,
+    "roc_auc": 0.9129,
+    "f1": 0.0512,
+    "precision": 0.0268,
+    "recall": 0.8840,
+    "precision_at_100": 0.94,
+    "precision_at_500": 0.482,
+    "precision_at_1000": 0.385
+  },
+  "Hybrid-GAT-XGBoost": {
+    "pr_auc": 0.1185,
+    "roc_auc": 0.9247,
+    "f1": 0.0684,
+    "precision": 0.0358,
+    "recall": 0.8960,
+    "precision_at_100": 0.96,
+    "precision_at_500": 0.542,
+    "precision_at_1000": 0.435
+  }
+}
